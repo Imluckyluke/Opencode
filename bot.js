@@ -1,4 +1,4 @@
-const { Agent, setGlobalDispatcher } = require("node:undici");
+const { Agent, setGlobalDispatcher } = require("undici");
 
 // Node's fetch defaults to a 5-minute headers timeout — Muse Spark can take
 // longer on long/complex replies, so raise it (here: 20 minutes).
