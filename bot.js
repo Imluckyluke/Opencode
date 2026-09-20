@@ -63,9 +63,12 @@ async function ocSendMessage(sessionId, text) {
   const res = await fetch(`${OC_URL}/session/${sessionId}/message`, {
     method: "POST",
     headers: ocHeaders({ "Content-Type": "application/json" }),
-    body: JSON.stringify({ text }),
+    body: JSON.stringify({ parts: [{ type: "text", text }] }),
   });
-  if (!res.ok) throw new Error(`message send failed: ${res.status}`);
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new Error(`message send failed: ${res.status} ${body.slice(0, 200)}`);
+  }
   const data = await res.json();
   return extractText(data);
 }
