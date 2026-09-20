@@ -7,8 +7,9 @@ RUN npm install -g opencode-ai
 RUN mkdir -p /root/.config/opencode
 COPY opencode.json /root/.config/opencode/opencode.json
 
-# Telegram relay bot (no extra deps — uses Node 20's built-in fetch)
+# Telegram relay bot (only dependency: undici, for a longer fetch timeout)
 WORKDIR /app
+RUN npm install undici
 COPY bot.js /app/bot.js
 
 WORKDIR /workspace
