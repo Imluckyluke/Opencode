@@ -1,3 +1,14 @@
+const { Agent, setGlobalDispatcher } = require("node:undici");
+
+// Node's fetch defaults to a 5-minute headers timeout — Muse Spark can take
+// longer on long/complex replies, so raise it (here: 20 minutes).
+setGlobalDispatcher(
+  new Agent({
+    headersTimeout: 20 * 60 * 1000,
+    bodyTimeout: 20 * 60 * 1000,
+  })
+);
+
 const TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const OC_PORT = process.env.PORT || 4096;
 const OC_URL = process.env.OPENCODE_URL || `http://localhost:${OC_PORT}`;
@@ -88,6 +99,14 @@ async function tgSend(chatId, text) {
   });
 }
 
+async function tgTyping(chatId) {
+  await fetch(`${TG_API}/sendChatAction`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ chat_id: chatId, action: "typing" }),
+  }).catch(() => {});
+}
+
 async function pollLoop() {
   let offset = 0;
   console.log("Telegram bot polling started");
@@ -116,7 +135,14 @@ async function pollLoop() {
 
       try {
         const sessionId = await getSessionFor(chatId);
-        const reply = await ocSendMessage(sessionId, msg.text);
+        const typingInterval = setInterval(() => tgTyping(chatId), 4000);
+        tgTyping(chatId);
+        let reply;
+        try {
+          reply = await ocSendMessage(sessionId, msg.text);
+        } finally {
+          clearInterval(typingInterval);
+        }
         await tgSend(chatId, reply);
       } catch (err) {
         console.error(err);
